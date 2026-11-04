@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Color Dice</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Fredoka+One&family=Luckiest+Guy&family=Nunito:ital,wght@0,800;0,900;1,900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='4' y='4' width='24' height='24' rx='6' fill='%23ffd23f'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23002855'/%3E%3C/svg%3E" />
+</head>
+<body data-theme="blue">
+  <div id="modeBanner" class="mode-banner hidden">
+    Mode démo local actif — ajoute tes clés Firebase dans
+    <code>public/firebase-config.js</code> pour activer la connexion Google.
+  </div>
+
+  <main class="app">
+    <header class="auth-row">
+      <button id="signInBtn" class="btn-auth">Connexion Google</button>
+      <div id="userBadge" class="user-badge hidden">
+        <img id="userAvatar" alt="" />
+        <span id="userName"></span>
+        <button id="signOutBtn" class="btn-ghost">Déconnexion</button>
+      </div>
+    </header>
+
+    <section class="glass-card">
+      <h1 class="title">LANCEZ LES DÉS DE COULEUR</h1>
+
+      <section class="controls">
+        <div class="pill-select pill-custom">
+          <button type="button" class="pill-trigger" id="colorTrigger" aria-haspopup="listbox" aria-expanded="false">
+            <span id="colorTriggerLabel">BLEU</span>
+          </button>
+          <ul class="pill-menu" id="colorMenu" role="listbox" hidden>
+            <li role="option" data-value="blue"   style="color:#0b5fff">BLEU</li>
+            <li role="option" data-value="purple" style="color:#7b2cf0">VIOLET</li>
+            <li role="option" data-value="green"  style="color:#1aa65a">VERT</li>
+            <li role="option" data-value="red"    style="color:#d93333">ROUGE</li>
+            <li role="option" data-value="black"  style="color:#111111">NOIR</li>
+          </ul>
+          <select id="colorSelect" hidden aria-hidden="true">
+            <option value="blue">BLEU</option>
+            <option value="purple">VIOLET</option>
+            <option value="green">VERT</option>
+            <option value="red">ROUGE</option>
+            <option value="black">NOIR</option>
+          </select>
+        </div>
+        <div class="pill-select pill-custom">
+          <button type="button" class="pill-trigger" id="countTrigger" aria-haspopup="listbox" aria-expanded="false">
+            <span id="countTriggerLabel">3 DÉS</span>
+          </button>
+          <ul class="pill-menu" id="countMenu" role="listbox" hidden></ul>
+          <select id="countSelect" hidden aria-hidden="true"></select>
+        </div>
+      </section>
+
+      <section id="diceArea" class="dice-area" aria-live="polite"></section>
+
+      <section class="gid-card">
+        <div class="gid-label">TON GAME ID</div>
+        <div class="gid-value" id="gidValue">— — — — — —</div>
+        <button id="copyGidBtn" class="btn-copy">COPIER</button>
+        <p class="gid-sub" id="gidSub">Base indisponible : tes tirages ne seront pas enregistrés.</p>
+      </section>
+
+      <button id="rollBtn" class="btn-big">RELANCER !</button>
+
+      <section class="counter-panel">
+        <div class="counter-col left">
+          <button class="counter-btn" data-delta="-1">-1</button>
+          <button class="counter-btn" data-delta="-10">-10</button>
+        </div>
+        <div class="counter-value" id="counterValue">0</div>
+        <div class="counter-col right">
+          <button class="counter-btn" data-delta="1">+1</button>
+          <button class="counter-btn" data-delta="10">+10</button>
+        </div>
+      </section>
+
+      <button id="historyBtn" class="btn-big">VOIR MES 20 DERNIERS ROULEAUX</button>
+
+      <section class="toggle-row">
+        <label for="antiAwkToggle" class="toggle-label">MODE ANTI-BANNISSEMENT</label>
+        <label class="switch">
+          <input type="checkbox" id="antiAwkToggle" />
+          <span class="slider"></span>
+        </label>
+      </section>
+
+      <footer class="palette-legend">
+        Les couleurs possibles sont :
+        <span style="color:#ff5555">rouge</span>,
+        <span style="color:#ffa64d">orange</span>,
+        <span style="color:#ffe14d">jaune</span>,
+        <span style="color:#5ee89a">vert</span>,
+        <span style="color:#5aa9ff">bleu</span>
+        et <span style="color:#c38bff">violet</span>.
+      </footer>
+    </section>
+
+    <section class="glass-card verify-card">
+      <h2 class="verify-title">VÉRIFIER UN GAME ID</h2>
+      <form id="lookupForm" class="verify-form" autocomplete="off">
+        <input id="lookupInput" type="text" placeholder="ex : eKpYC5mLpU" maxlength="32" spellcheck="false" />
+        <button type="submit" class="btn-big verify-btn">VÉRIFIER</button>
+      </form>
+      <div id="lookupResult" class="verify-result"></div>
+    </section>
+  </main>
+
+  <button id="adminFab" class="admin-fab" type="button" title="Panel administrateur">ADMIN</button>
+
+  <dialog id="adminLogin" class="modal admin-modal">
+    <h2>Panel administrateur</h2>
+    <p class="admin-sub">Entre le jeton administrateur pour accéder au panel.</p>
+    <form id="adminLoginForm" autocomplete="off">
+      <input id="adminTokenInput" type="password" placeholder="Jeton admin" autocomplete="off" />
+      <div class="admin-actions">
+        <button type="submit" class="btn-big">Se connecter</button>
+        <button type="button" class="btn-ghost" id="adminLoginCancel">Annuler</button>
+      </div>
+      <p class="admin-msg" id="adminLoginMsg" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <dialog id="adminPanel" class="modal admin-panel-modal">
+    <header class="admin-header">
+      <h2>Panel administrateur</h2>
+      <button type="button" class="btn-ghost" id="adminLogoutBtn">Déconnexion</button>
+      <button type="button" class="btn-ghost" id="adminPanelClose">Fermer</button>
+    </header>
+
+    <section class="admin-section">
+      <h3>Rechercher un joueur</h3>
+      <form id="adminSearchForm" class="admin-row" autocomplete="off">
+        <input id="adminSearchInput" type="text" placeholder="Entrer un Game ID" maxlength="32" />
+        <button type="submit" class="btn-big admin-btn">Rechercher</button>
+      </form>
+      <div id="adminPlayer" class="admin-player"></div>
+    </section>
+
+    <section class="admin-section" id="adminPredictSection" hidden>
+      <h3>Préparer une prédiction</h3>
+      <div class="admin-row">
+        <label class="admin-field">
+          <span>Nombre de dés</span>
+          <select id="adminPredCount"></select>
+        </label>
+      </div>
+      <div id="adminPredDice" class="admin-pred-dice"></div>
+      <div class="admin-action-row">
+        <button type="button" id="adminSavePrediction" class="btn-big admin-btn">Enregistrer ma prédiction</button>
+        <button type="button" id="adminForceRoll" class="btn-big admin-btn admin-btn-force">Forcer le prochain lancer</button>
+      </div>
+      <p class="admin-msg" id="adminPredMsg" aria-live="polite"></p>
+    </section>
+
+    <section class="admin-section">
+      <h3>Lancers forcés</h3>
+      <div id="adminForced" class="admin-list"></div>
+    </section>
+
+    <section class="admin-section">
+      <h3>Prédictions récentes</h3>
+      <div id="adminPredictions" class="admin-list"></div>
+    </section>
+
+    <section class="admin-section">
+      <h3>Alertes de sécurité</h3>
+      <div id="adminAlerts" class="admin-list"></div>
+    </section>
+  </dialog>
+
+  <dialog id="historyModal" class="modal">
+    <h2>Mes 20 derniers lancers</h2>
+    <div id="historyList" class="history-list"></div>
+    <button id="closeHistoryBtn" class="btn-big">Fermer</button>
+  </dialog>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

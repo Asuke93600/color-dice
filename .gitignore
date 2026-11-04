@@ -1,0 +1,11 @@
+node_modules/
+*.db
+*.db-shm
+*.db-wal
+firebase-admin-key.json
+admin-token.txt
+.env
+.env.*
+*.log
+.DS_Store
+Thumbs.db
