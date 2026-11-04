@@ -1,14 +1,12 @@
-// Remplace les 6 valeurs ci-dessous par celles de ton projet Firebase.
-// Console Firebase > Paramètres du projet > Tes applications > SDK config.
-// Ces clés sont publiques (destinées au navigateur) ; la sécurité réelle
-// est assurée par Firestore Rules (voir ../firestore.rules).
+// Config Firebase (publique, destinée au navigateur).
+// La sécurité réelle est assurée côté serveur via firebase-admin + vérification d'ID token.
 export const firebaseConfig = {
-  apiKey:            "FILL:apiKey",
-  authDomain:        "FILL:authDomain",       // ex : color-dice.firebaseapp.com
-  projectId:         "FILL:projectId",
-  storageBucket:     "FILL:storageBucket",
-  messagingSenderId: "FILL:messagingSenderId",
-  appId:             "FILL:appId",
+  apiKey:            "AIzaSyBdMOcvKvpnlvWhm1QDFVZu065K5VcxgyA",
+  authDomain:        "color-dice-59b9a.firebaseapp.com",
+  projectId:         "color-dice-59b9a",
+  storageBucket:     "color-dice-59b9a.firebasestorage.app",
+  messagingSenderId: "174475483164",
+  appId:             "1:174475483164:web:5dff0da90c720b4a41a7d9",
 };
 
 export const isConfigured = Object.values(firebaseConfig)
