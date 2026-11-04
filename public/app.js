@@ -227,7 +227,7 @@ async function signInGoogle() {
       adminFab.classList.add('admin-on');
       toast('Mode administrateur activé.');
     } else {
-      toast('Cet email n\'est pas administrateur.');
+      toast('Connexion réussie.');
     }
   } catch (e) {
     toast('Connexion annulée : ' + e.message);
