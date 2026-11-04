@@ -251,6 +251,10 @@ app.use(express.json({ limit: '4kb' }));
 app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
   res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
+  if (req.path.startsWith('/api/')) {
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Pragma', 'no-cache');
+  }
   next();
 });
 app.use(express.static(path.join(__dirname, 'public'), {

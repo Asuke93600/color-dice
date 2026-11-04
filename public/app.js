@@ -90,6 +90,7 @@ function fmtDate(ms) {
 async function api(path, options = {}) {
   const res = await fetch(path, {
     credentials: 'same-origin',
+    cache: 'no-store',
     headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
     ...options,
   });
