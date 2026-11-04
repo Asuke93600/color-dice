@@ -350,12 +350,13 @@ document.querySelectorAll('.counter-btn').forEach(b => {
 
 antiAwkToggle.addEventListener('change', async () => {
   state.antiAwk = antiAwkToggle.checked;
+  applyAntiAwkClass();
   if (state.signedIn) {
     try { await api('/api/settings', { method: 'POST', body: JSON.stringify({ anti_awk: state.antiAwk }) }); }
     catch (e) { console.warn('antiAwk save:', e); }
   }
   if (state.currentDice.length) {
-    renderDice(state.currentDice, { hidden: state.antiAwk, animate: false });
+    renderDice(state.currentDice, { hidden: state.antiAwk, animate: false, forced: !!state.currentForced });
   }
 });
 
