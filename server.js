@@ -98,12 +98,20 @@ db.exec(`
 `);
 try { db.exec('ALTER TABLE users ADD COLUMN last_seen_at INTEGER'); } catch {}
 try { db.exec('ALTER TABLE rolls ADD COLUMN forced INTEGER NOT NULL DEFAULT 0'); } catch {}
+try { db.exec('ALTER TABLE users ADD COLUMN email TEXT'); } catch {}
+
+const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+  .split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
+function isAdminEmail(email) {
+  return !!(email && ADMIN_EMAILS.includes(String(email).toLowerCase()));
+}
 
 const q = {
   userByUid:    db.prepare('SELECT * FROM users WHERE uid = ?'),
   userByGameId: db.prepare('SELECT uid FROM users WHERE game_id = ?'),
-  insertUser:   db.prepare('INSERT INTO users (uid, game_id, display_name, created_at) VALUES (?, ?, ?, ?)'),
+  insertUser:   db.prepare('INSERT INTO users (uid, game_id, display_name, email, created_at) VALUES (?, ?, ?, ?, ?)'),
   updateName:   db.prepare('UPDATE users SET display_name = ? WHERE uid = ? AND (display_name IS NULL OR display_name = \'\')'),
+  updateEmail:  db.prepare('UPDATE users SET email = ? WHERE uid = ?'),
   updCounter:   db.prepare('UPDATE users SET counter = ? WHERE uid = ?'),
   updTheme:     db.prepare('UPDATE users SET theme = ? WHERE uid = ?'),
   updAntiAwk:   db.prepare('UPDATE users SET anti_awk = ? WHERE uid = ?'),
@@ -149,15 +157,21 @@ function uniqueGameId() {
   }
   throw new Error('impossible de générer un Game ID unique');
 }
-function ensureUser(uid, displayName) {
+function ensureUser(uid, displayName, email) {
   let u = q.userByUid.get(uid);
   if (!u) {
     const gid = uniqueGameId();
-    q.insertUser.run(uid, gid, displayName || null, Date.now());
+    q.insertUser.run(uid, gid, displayName || null, email || null, Date.now());
     u = q.userByUid.get(uid);
-  } else if (displayName && !u.display_name) {
-    q.updateName.run(displayName, uid);
-    u.display_name = displayName;
+  } else {
+    if (displayName && !u.display_name) {
+      q.updateName.run(displayName, uid);
+      u.display_name = displayName;
+    }
+    if (email && u.email !== email) {
+      q.updateEmail.run(email, uid);
+      u.email = email;
+    }
   }
   return u;
 }
@@ -252,7 +266,7 @@ app.post('/api/auth/firebase', async (req, res) => {
   try {
     const decoded = await firebaseAuth.verifyIdToken(idToken);
     const uid = 'g:' + decoded.uid;
-    ensureUser(uid, decoded.name || decoded.email || null);
+    ensureUser(uid, decoded.name || decoded.email || null, decoded.email || null);
     const sid = createSession(uid);
     setSessionCookie(res, sid);
     res.json({ ok: true });
@@ -294,6 +308,7 @@ app.get('/api/me', authed, (req, res) => {
     anti_awk: !!u.anti_awk,
     theme: u.theme,
     is_demo: u.uid.startsWith('demo:'),
+    is_admin_candidate: isAdminEmail(u.email),
   });
 });
 

@@ -165,6 +165,8 @@ async function loadProfile() {
     state.gameId = me.game_id;
     state.counter = me.counter;
     state.antiAwk = me.anti_awk;
+    state.isAdminCandidate = !!me.is_admin_candidate;
+    adminFab.classList.toggle('hidden', !state.isAdminCandidate);
     gidValue.textContent = me.game_id;
     gidSub.textContent = me.is_demo
       ? 'Session démo locale au serveur (Google indispo).'
@@ -188,8 +190,10 @@ async function loadProfile() {
 function showSignedOut() {
   state.signedIn = false;
   state.gameId = null;
+  state.isAdminCandidate = false;
+  adminFab.classList.add('hidden');
   gidValue.textContent = '— — — — — —';
-  gidSub.textContent = 'Non connecté : connecte-toi ou lance la session démo.';
+  gidSub.textContent = 'Connecte-toi avec Google pour obtenir ton Game ID.';
   gidSub.classList.remove('ok');
   signInBtn.classList.remove('hidden');
   userBadge.classList.add('hidden');
