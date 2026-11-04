@@ -191,8 +191,9 @@ function showSignedOut() {
   state.isAdminCandidate = false;
   adminFab.classList.add('hidden');
   gidValue.textContent = '— — — — — —';
-  gidSub.textContent = 'Génération de ton Game ID…';
+  gidSub.textContent = 'Connecte-toi avec Google pour obtenir ton Game ID.';
   gidSub.classList.remove('ok');
+  signInBtn.classList.remove('hidden');
   userBadge.classList.add('hidden');
 }
 
@@ -267,7 +268,7 @@ function bumpCounter(delta) {
 
 // ---------- History modal ----------
 async function openHistory() {
-  if (!state.signedIn) { toast('Chargement de la session, retente dans un instant.'); return; }
+  if (!state.signedIn) { toast('Connecte-toi pour voir ton historique.'); return; }
   historyList.innerHTML = '<p class="history-empty">Chargement…</p>';
   historyModal.showModal();
   try {
@@ -738,37 +739,10 @@ async function loadAlerts() {
 adminCheck();
 
 // ---------- Boot ----------
-async function ensureSession() {
-  const ok = await loadProfile();
-  if (ok) return true;
-  // Pas de session : création automatique de session + retry 2x en cas de cold-start Render
-  for (let i = 0; i < 3; i++) {
-    try {
-      await signInDemo();
-      return true;
-    } catch (e) {
-      console.warn('demo signin retry', i, e);
-      await new Promise(r => setTimeout(r, 1200));
-    }
-  }
-  gidSub.textContent = 'Serveur indisponible, recharge la page.';
-  return false;
-}
-
 (async () => {
   try {
     const mode = await api('/api/auth/mode');
     state.serverHasFirebase = !!mode.firebase;
   } catch {}
-  await ensureSession();
-  // Entrée admin cachée : ?admin=1 dans l'URL ou Ctrl+Shift+A
-  if (new URLSearchParams(location.search).get('admin') === '1') {
-    signInGoogle();
-  }
-  document.addEventListener('keydown', e => {
-    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
-      e.preventDefault();
-      signInGoogle();
-    }
-  });
+  await loadProfile();
 })();
