@@ -161,7 +161,8 @@ async function loadProfile() {
     state.counter = me.counter;
     state.antiAwk = me.anti_awk;
     state.isAdminCandidate = !!me.is_admin_candidate;
-    adminFab.classList.toggle('hidden', !state.isAdminCandidate);
+    // Le bouton admin reste caché tant que /api/admin/check ne confirme pas.
+    if (!state.isAdminCandidate && !adminIsLogged) adminFab.classList.add('hidden');
     gidValue.textContent = me.game_id;
     gidSub.textContent = me.is_demo
       ? 'Session démo locale au serveur (Google indispo).'
@@ -189,7 +190,7 @@ function showSignedOut() {
   state.isAdminCandidate = false;
   adminFab.classList.add('hidden');
   gidValue.textContent = '— — — — — —';
-  gidSub.textContent = 'Chargement de ton Game ID…';
+  gidSub.textContent = 'Génération de ton Game ID…';
   gidSub.classList.remove('ok');
   userBadge.classList.add('hidden');
 }
@@ -265,7 +266,7 @@ function bumpCounter(delta) {
 
 // ---------- History modal ----------
 async function openHistory() {
-  if (!state.signedIn) { toast('Connecte-toi pour voir ton historique.'); return; }
+  if (!state.signedIn) { toast('Chargement de la session, retente dans un instant.'); return; }
   historyList.innerHTML = '<p class="history-empty">Chargement…</p>';
   historyModal.showModal();
   try {
@@ -736,15 +737,29 @@ async function loadAlerts() {
 adminCheck();
 
 // ---------- Boot ----------
+async function ensureSession() {
+  const ok = await loadProfile();
+  if (ok) return true;
+  // Pas de session : création automatique de session + retry 2x en cas de cold-start Render
+  for (let i = 0; i < 3; i++) {
+    try {
+      await signInDemo();
+      return true;
+    } catch (e) {
+      console.warn('demo signin retry', i, e);
+      await new Promise(r => setTimeout(r, 1200));
+    }
+  }
+  gidSub.textContent = 'Serveur indisponible, recharge la page.';
+  return false;
+}
+
 (async () => {
   try {
     const mode = await api('/api/auth/mode');
     state.serverHasFirebase = !!mode.firebase;
   } catch {}
-  const ok = await loadProfile();
-  if (!ok) {
-    try { await signInDemo(); } catch (e) { console.warn('demo:', e); }
-  }
+  await ensureSession();
   // Entrée admin cachée : ?admin=1 dans l'URL ou Ctrl+Shift+A
   if (new URLSearchParams(location.search).get('admin') === '1') {
     signInGoogle();
