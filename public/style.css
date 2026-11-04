@@ -830,13 +830,14 @@ body::before {
 .ai-badge.consumed { background: rgba(255,255,255,.2); color: #fff; }
 
 .forced-banner {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  margin: 2px auto 0;
+  justify-content: center;
+  gap: 5px;
+  margin: 6px auto 0;
   padding: 0;
   background: transparent;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.55);
   border: none;
   font-family: "Nunito", sans-serif;
   font-size: 9px;
@@ -844,7 +845,9 @@ body::before {
   letter-spacing: 0.3px;
   text-transform: none;
   box-shadow: none;
+  width: 100%;
 }
+.forced-banner[hidden] { display: none; }
 .forced-banner::before {
   content: "";
   display: inline-block;

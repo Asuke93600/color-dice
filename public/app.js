@@ -118,9 +118,9 @@ function applyTheme(theme) {
 }
 
 // ---------- Rendu dés ----------
+const forcedBanner = document.getElementById('forcedBanner');
 function renderDice(colors, { hidden, animate = true, forced = false }) {
   diceArea.innerHTML = '';
-  diceArea.classList.toggle('has-forced', !!forced);
   const row = document.createElement('div');
   row.className = 'dice-row';
   colors.forEach((c, idx) => {
@@ -145,13 +145,7 @@ function renderDice(colors, { hidden, animate = true, forced = false }) {
     row.appendChild(d);
   });
   diceArea.appendChild(row);
-  if (forced) {
-    const banner = document.createElement('div');
-    banner.className = 'forced-banner';
-    banner.textContent = 'résultat configuré par l\'administrateur';
-    banner.title = 'Ce lancer n\'est pas aléatoire : il a été défini depuis le panel admin.';
-    diceArea.appendChild(banner);
-  }
+  if (forcedBanner) forcedBanner.hidden = !forced;
 }
 
 // ---------- Flow utilisateur ----------
