@@ -371,12 +371,18 @@ body::before {
 .die[data-color="green"]  { background: var(--dice-green); }
 .die[data-color="blue"]   { background: var(--dice-blue); }
 .die[data-color="purple"] { background: var(--dice-purple); }
-.die.hidden-face { background: var(--dice-hidden); cursor: pointer; }
-.die.hidden-face .pip {
-  background: transparent; width: auto; height: auto; box-shadow: none;
-  font-weight: 700; font-size: 26px; color: #fff; opacity: .9;
+.die.blurred {
+  filter: blur(10px);
+  cursor: pointer;
+  transition: filter .25s ease;
 }
-.die.hidden-face .pip::before { content: "?"; }
+.die.blurred:hover { filter: blur(6px); }
+
+.history-dot.blurred {
+  filter: blur(6px);
+  cursor: pointer;
+  transition: filter .25s ease;
+}
 
 /* ---------- Game ID card ---------- */
 .gid-card {

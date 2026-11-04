@@ -139,8 +139,9 @@ function renderDice(colors, { hidden, animate = true, forced = false }) {
       setTimeout(() => d.classList.remove('shaking'), perDur);
     }
     if (hidden) {
-      d.classList.add('hidden-face');
-      d.addEventListener('click', () => d.classList.remove('hidden-face'), { once: true });
+      d.classList.add('blurred');
+      d.title = 'Appuie pour révéler';
+      d.addEventListener('click', () => d.classList.remove('blurred'), { once: true });
     }
     row.appendChild(d);
   });
@@ -277,9 +278,12 @@ async function openHistory() {
       dots.className = 'history-dice';
       for (const c of r.dice) {
         const dot = document.createElement('div');
-        dot.className = 'history-dot';
+        dot.className = 'history-dot' + (state.antiAwk ? ' blurred' : '');
         dot.style.background = COLOR_HEX[c] || '#888';
-        dot.title = COLOR_LABEL[c] || c;
+        dot.title = state.antiAwk ? 'Appuie pour révéler' : (COLOR_LABEL[c] || c);
+        if (state.antiAwk) {
+          dot.addEventListener('click', () => dot.classList.remove('blurred'), { once: true });
+        }
         dots.appendChild(dot);
       }
       item.appendChild(head);
