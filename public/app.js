@@ -226,7 +226,7 @@ async function signInGoogle() {
 
 async function signOut() {
   try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
-  await signInDemo(); // bascule sur une nouvelle session démo
+  showSignedOut();
 }
 
 // ---------- Rolls ----------
@@ -730,10 +730,5 @@ adminCheck();
     const mode = await api('/api/auth/mode');
     state.serverHasFirebase = !!mode.firebase;
   } catch {}
-  if (!state.serverHasFirebase) {
-    modeBanner.classList.remove('hidden');
-    modeBanner.innerHTML = 'Mode démo serveur actif — ajoute <code>firebase-admin-key.json</code> à la racine et <code>public/firebase-config.js</code> pour activer la connexion Google.';
-  }
-  const ok = await loadProfile();
-  if (!ok) await signInDemo();
+  await loadProfile();
 })();
