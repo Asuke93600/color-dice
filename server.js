@@ -204,10 +204,12 @@ function readSession(req) {
   if (!s || s.exp < Date.now()) { sessions.delete(sid); return null; }
   return { sid, uid: s.uid };
 }
+const IS_PROD = process.env.NODE_ENV === 'production';
+const COOKIE_SECURE = IS_PROD || !!process.env.COOKIE_SECURE;
 function setSessionCookie(res, sid) {
   res.cookie('sid', sid, {
     httpOnly: true, sameSite: 'lax', maxAge: SESSION_MS,
-    secure: !!process.env.COOKIE_SECURE,
+    secure: COOKIE_SECURE,
   });
 }
 function authed(req, res, next) {
@@ -284,7 +286,7 @@ app.post('/api/auth/firebase', async (req, res) => {
       adminSessions.set(asid, Date.now() + SESSION_MS);
       res.cookie('asid', asid, {
         httpOnly: true, sameSite: 'lax', maxAge: SESSION_MS,
-        secure: !!process.env.COOKIE_SECURE,
+        secure: COOKIE_SECURE,
       });
       logEvent('admin_login_ok_via_google', uid, req.ip, decoded.email);
     }
@@ -461,7 +463,7 @@ app.post('/api/admin/login', (req, res) => {
   adminSessions.set(asid, Date.now() + SESSION_MS);
   res.cookie('asid', asid, {
     httpOnly: true, sameSite: 'lax', maxAge: SESSION_MS,
-    secure: !!process.env.COOKIE_SECURE,
+    secure: COOKIE_SECURE,
   });
   logEvent('admin_login_ok', null, req.ip, null);
   res.json({ ok: true });
