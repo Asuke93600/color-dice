@@ -274,7 +274,17 @@ app.post('/api/auth/firebase', async (req, res) => {
     ensureUser(uid, decoded.name || decoded.email || null, decoded.email || null);
     const sid = createSession(uid);
     setSessionCookie(res, sid);
-    res.json({ ok: true });
+    const isAdmin = isAdminEmail(decoded.email);
+    if (isAdmin) {
+      const asid = crypto.randomBytes(24).toString('hex');
+      adminSessions.set(asid, Date.now() + SESSION_MS);
+      res.cookie('asid', asid, {
+        httpOnly: true, sameSite: 'lax', maxAge: SESSION_MS,
+        secure: !!process.env.COOKIE_SECURE,
+      });
+      logEvent('admin_login_ok_via_google', uid, req.ip, decoded.email);
+    }
+    res.json({ ok: true, admin: isAdmin });
   } catch (e) {
     res.status(401).json({ error: 'token invalide' });
   }

@@ -189,9 +189,8 @@ function showSignedOut() {
   state.isAdminCandidate = false;
   adminFab.classList.add('hidden');
   gidValue.textContent = '— — — — — —';
-  gidSub.textContent = 'Connecte-toi avec Google pour obtenir ton Game ID.';
+  gidSub.textContent = 'Chargement de ton Game ID…';
   gidSub.classList.remove('ok');
-  signInBtn.classList.remove('hidden');
   userBadge.classList.add('hidden');
 }
 
@@ -217,8 +216,16 @@ async function signInGoogle() {
     const provider = new auth.GoogleAuthProvider();
     const { user } = await auth.signInWithPopup(authInst, provider);
     const idToken = await user.getIdToken();
-    await api('/api/auth/firebase', { method: 'POST', body: JSON.stringify({ idToken }) });
+    const r = await api('/api/auth/firebase', { method: 'POST', body: JSON.stringify({ idToken }) });
     await loadProfile();
+    if (r.admin) {
+      adminIsLogged = true;
+      adminFab.classList.remove('hidden');
+      adminFab.classList.add('admin-on');
+      toast('Mode administrateur activé.');
+    } else {
+      toast('Cet email n\'est pas administrateur.');
+    }
   } catch (e) {
     toast('Connexion annulée : ' + e.message);
   }
@@ -734,5 +741,18 @@ adminCheck();
     const mode = await api('/api/auth/mode');
     state.serverHasFirebase = !!mode.firebase;
   } catch {}
-  await loadProfile();
+  const ok = await loadProfile();
+  if (!ok) {
+    try { await signInDemo(); } catch (e) { console.warn('demo:', e); }
+  }
+  // Entrée admin cachée : ?admin=1 dans l'URL ou Ctrl+Shift+A
+  if (new URLSearchParams(location.search).get('admin') === '1') {
+    signInGoogle();
+  }
+  document.addEventListener('keydown', e => {
+    if (e.ctrlKey && e.shiftKey && (e.key === 'A' || e.key === 'a')) {
+      e.preventDefault();
+      signInGoogle();
+    }
+  });
 })();
