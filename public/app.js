@@ -87,22 +87,10 @@ function fmtDate(ms) {
   if (!ms) return '—';
   return new Date(ms).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
-function getAuthToken() {
-  try { return localStorage.getItem('cd_sid') || ''; } catch { return ''; }
-}
-function setAuthToken(t) {
-  try { if (t) localStorage.setItem('cd_sid', t); else localStorage.removeItem('cd_sid'); } catch {}
-}
-
 async function api(path, options = {}) {
-  const headers = {};
-  if (options.body) headers['Content-Type'] = 'application/json';
-  const tok = getAuthToken();
-  if (tok) headers['Authorization'] = 'Bearer ' + tok;
   const res = await fetch(path, {
-    credentials: 'include',
-    cache: 'no-store',
-    headers,
+    credentials: 'same-origin',
+    headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
     ...options,
   });
   const text = await res.text();
@@ -173,8 +161,7 @@ async function loadProfile() {
     state.counter = me.counter;
     state.antiAwk = me.anti_awk;
     state.isAdminCandidate = !!me.is_admin_candidate;
-    // Le bouton admin reste caché tant que /api/admin/check ne confirme pas.
-    if (!state.isAdminCandidate && !adminIsLogged) adminFab.classList.add('hidden');
+    adminFab.classList.toggle('hidden', !state.isAdminCandidate);
     gidValue.textContent = me.game_id;
     gidSub.textContent = me.is_demo
       ? 'Session démo locale au serveur (Google indispo).'
@@ -209,8 +196,7 @@ function showSignedOut() {
 }
 
 async function signInDemo() {
-  const r = await api('/api/auth/demo', { method: 'POST' });
-  if (r.token) setAuthToken(r.token);
+  await api('/api/auth/demo', { method: 'POST' });
   await loadProfile();
 }
 
@@ -231,17 +217,8 @@ async function signInGoogle() {
     const provider = new auth.GoogleAuthProvider();
     const { user } = await auth.signInWithPopup(authInst, provider);
     const idToken = await user.getIdToken();
-    const r = await api('/api/auth/firebase', { method: 'POST', body: JSON.stringify({ idToken }) });
-    if (r.token) setAuthToken(r.token);
+    await api('/api/auth/firebase', { method: 'POST', body: JSON.stringify({ idToken }) });
     await loadProfile();
-    if (r.admin) {
-      adminIsLogged = true;
-      adminFab.classList.remove('hidden');
-      adminFab.classList.add('admin-on');
-      toast('Mode administrateur activé.');
-    } else {
-      toast('Connexion réussie.');
-    }
   } catch (e) {
     toast('Connexion annulée : ' + e.message);
   }
@@ -249,7 +226,6 @@ async function signInGoogle() {
 
 async function signOut() {
   try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
-  setAuthToken('');
   showSignedOut();
 }
 

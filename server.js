@@ -204,26 +204,14 @@ function readSession(req) {
   if (!s || s.exp < Date.now()) { sessions.delete(sid); return null; }
   return { sid, uid: s.uid };
 }
-const IS_PROD = process.env.NODE_ENV === 'production';
-const COOKIE_SECURE = IS_PROD || !!process.env.COOKIE_SECURE;
 function setSessionCookie(res, sid) {
   res.cookie('sid', sid, {
     httpOnly: true, sameSite: 'lax', maxAge: SESSION_MS,
-    secure: COOKIE_SECURE,
+    secure: !!process.env.COOKIE_SECURE,
   });
 }
-function readSessionFromHeader(req) {
-  const auth = req.headers.authorization || '';
-  if (!auth.startsWith('Bearer ')) return null;
-  const sid = auth.slice(7).trim();
-  if (!sid) return null;
-  const s = sessions.get(sid);
-  if (!s || s.exp < Date.now()) { sessions.delete(sid); return null; }
-  return { sid, uid: s.uid };
-}
-
 function authed(req, res, next) {
-  const s = readSession(req) || readSessionFromHeader(req);
+  const s = readSession(req);
   if (!s) return res.status(401).json({ error: 'non authentifié' });
   req.uid = s.uid;
   next();
@@ -260,15 +248,6 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(cookieParser());
 app.use(express.json({ limit: '4kb' }));
-app.use((req, res, next) => {
-  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin-allow-popups');
-  res.setHeader('Cross-Origin-Embedder-Policy', 'unsafe-none');
-  if (req.path.startsWith('/api/')) {
-    res.setHeader('Cache-Control', 'no-store');
-    res.setHeader('Pragma', 'no-cache');
-  }
-  next();
-});
 app.use(express.static(path.join(__dirname, 'public'), {
   setHeaders: res => res.setHeader('Cache-Control', 'no-store'),
 }));
@@ -290,17 +269,7 @@ app.post('/api/auth/firebase', async (req, res) => {
     ensureUser(uid, decoded.name || decoded.email || null, decoded.email || null);
     const sid = createSession(uid);
     setSessionCookie(res, sid);
-    const isAdmin = isAdminEmail(decoded.email);
-    if (isAdmin) {
-      const asid = crypto.randomBytes(24).toString('hex');
-      adminSessions.set(asid, Date.now() + SESSION_MS);
-      res.cookie('asid', asid, {
-        httpOnly: true, sameSite: 'lax', maxAge: SESSION_MS,
-        secure: COOKIE_SECURE,
-      });
-      logEvent('admin_login_ok_via_google', uid, req.ip, decoded.email);
-    }
-    res.json({ ok: true, admin: isAdmin, token: sid });
+    res.json({ ok: true });
   } catch (e) {
     res.status(401).json({ error: 'token invalide' });
   }
@@ -317,7 +286,7 @@ app.post('/api/auth/demo', (req, res) => {
   ensureUser(uid, 'Invité (démo)');
   const sid = createSession(uid);
   setSessionCookie(res, sid);
-  res.json({ ok: true, demo: true, token: sid });
+  res.json({ ok: true, demo: true });
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -473,7 +442,7 @@ app.post('/api/admin/login', (req, res) => {
   adminSessions.set(asid, Date.now() + SESSION_MS);
   res.cookie('asid', asid, {
     httpOnly: true, sameSite: 'lax', maxAge: SESSION_MS,
-    secure: COOKIE_SECURE,
+    secure: !!process.env.COOKIE_SECURE,
   });
   logEvent('admin_login_ok', null, req.ip, null);
   res.json({ ok: true });
