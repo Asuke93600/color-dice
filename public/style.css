@@ -378,6 +378,9 @@ body::before {
 }
 .die.blurred:hover { filter: blur(6px); }
 
+body.anti-awk-on .pill-select { filter: blur(5px); transition: filter .25s ease; }
+body.anti-awk-on .pill-select:hover { filter: blur(2px); }
+
 .history-dot.blurred {
   filter: blur(6px);
   cursor: pointer;

@@ -169,6 +169,7 @@ async function loadProfile() {
     gidSub.classList.add('ok');
     counterValueEl.textContent = formatCounter(me.counter);
     antiAwkToggle.checked = me.anti_awk;
+    applyAntiAwkClass();
     applyTheme(me.theme);
     signInBtn.classList.add('hidden');
     userBadge.classList.remove('hidden');
