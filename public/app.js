@@ -87,11 +87,22 @@ function fmtDate(ms) {
   if (!ms) return '—';
   return new Date(ms).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
 }
+function getAuthToken() {
+  try { return localStorage.getItem('cd_sid') || ''; } catch { return ''; }
+}
+function setAuthToken(t) {
+  try { if (t) localStorage.setItem('cd_sid', t); else localStorage.removeItem('cd_sid'); } catch {}
+}
+
 async function api(path, options = {}) {
+  const headers = {};
+  if (options.body) headers['Content-Type'] = 'application/json';
+  const tok = getAuthToken();
+  if (tok) headers['Authorization'] = 'Bearer ' + tok;
   const res = await fetch(path, {
     credentials: 'include',
     cache: 'no-store',
-    headers: options.body ? { 'Content-Type': 'application/json' } : undefined,
+    headers,
     ...options,
   });
   const text = await res.text();
@@ -198,7 +209,8 @@ function showSignedOut() {
 }
 
 async function signInDemo() {
-  await api('/api/auth/demo', { method: 'POST' });
+  const r = await api('/api/auth/demo', { method: 'POST' });
+  if (r.token) setAuthToken(r.token);
   await loadProfile();
 }
 
@@ -220,6 +232,7 @@ async function signInGoogle() {
     const { user } = await auth.signInWithPopup(authInst, provider);
     const idToken = await user.getIdToken();
     const r = await api('/api/auth/firebase', { method: 'POST', body: JSON.stringify({ idToken }) });
+    if (r.token) setAuthToken(r.token);
     await loadProfile();
     if (r.admin) {
       adminIsLogged = true;
@@ -236,6 +249,7 @@ async function signInGoogle() {
 
 async function signOut() {
   try { await api('/api/auth/logout', { method: 'POST' }); } catch {}
+  setAuthToken('');
   showSignedOut();
 }
 

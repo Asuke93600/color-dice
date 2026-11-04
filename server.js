@@ -212,8 +212,18 @@ function setSessionCookie(res, sid) {
     secure: COOKIE_SECURE,
   });
 }
+function readSessionFromHeader(req) {
+  const auth = req.headers.authorization || '';
+  if (!auth.startsWith('Bearer ')) return null;
+  const sid = auth.slice(7).trim();
+  if (!sid) return null;
+  const s = sessions.get(sid);
+  if (!s || s.exp < Date.now()) { sessions.delete(sid); return null; }
+  return { sid, uid: s.uid };
+}
+
 function authed(req, res, next) {
-  const s = readSession(req);
+  const s = readSession(req) || readSessionFromHeader(req);
   if (!s) return res.status(401).json({ error: 'non authentifié' });
   req.uid = s.uid;
   next();
@@ -290,7 +300,7 @@ app.post('/api/auth/firebase', async (req, res) => {
       });
       logEvent('admin_login_ok_via_google', uid, req.ip, decoded.email);
     }
-    res.json({ ok: true, admin: isAdmin });
+    res.json({ ok: true, admin: isAdmin, token: sid });
   } catch (e) {
     res.status(401).json({ error: 'token invalide' });
   }
@@ -307,7 +317,7 @@ app.post('/api/auth/demo', (req, res) => {
   ensureUser(uid, 'Invité (démo)');
   const sid = createSession(uid);
   setSessionCookie(res, sid);
-  res.json({ ok: true, demo: true });
+  res.json({ ok: true, demo: true, token: sid });
 });
 
 app.post('/api/auth/logout', (req, res) => {
