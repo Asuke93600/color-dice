@@ -200,27 +200,44 @@ async function signInDemo() {
   await loadProfile();
 }
 
+async function getFirebaseAuth() {
+  const cfg = await import('/firebase-config.js');
+  if (!cfg.isConfigured) throw new Error('firebase-config.js : clés manquantes');
+  const [{ initializeApp }, auth] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
+  ]);
+  const app = initializeApp(cfg.firebaseConfig);
+  return { authInst: auth.getAuth(app), auth };
+}
+
 async function signInGoogle() {
   if (!state.serverHasFirebase) {
     toast('Firebase non configuré côté serveur.');
     return;
   }
   try {
-    const cfg = await import('/firebase-config.js');
-    if (!cfg.isConfigured) { toast('firebase-config.js : clés manquantes.'); return; }
-    const [{ initializeApp }, auth] = await Promise.all([
-      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js'),
-      import('https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js'),
-    ]);
-    const app = initializeApp(cfg.firebaseConfig);
-    const authInst = auth.getAuth(app);
+    const { authInst, auth } = await getFirebaseAuth();
     const provider = new auth.GoogleAuthProvider();
-    const { user } = await auth.signInWithPopup(authInst, provider);
-    const idToken = await user.getIdToken();
+    // Redirection complète au lieu de popup : contourne les problèmes de COOP / popup bloqué.
+    await auth.signInWithRedirect(authInst, provider);
+  } catch (e) {
+    toast('Erreur de connexion : ' + e.message);
+  }
+}
+
+async function handleRedirectResult() {
+  if (!state.serverHasFirebase) return;
+  try {
+    const { authInst, auth } = await getFirebaseAuth();
+    const result = await auth.getRedirectResult(authInst);
+    if (!result || !result.user) return;
+    const idToken = await result.user.getIdToken();
     await api('/api/auth/firebase', { method: 'POST', body: JSON.stringify({ idToken }) });
     await loadProfile();
+    toast('Connexion réussie.');
   } catch (e) {
-    toast('Connexion annulée : ' + e.message);
+    console.warn('redirect result:', e);
   }
 }
 
@@ -734,5 +751,6 @@ adminCheck();
     const mode = await api('/api/auth/mode');
     state.serverHasFirebase = !!mode.firebase;
   } catch {}
+  await handleRedirectResult();
   await loadProfile();
 })();
