@@ -189,7 +189,7 @@ function showSignedOut() {
   state.isAdminCandidate = false;
   adminFab.classList.add('hidden');
   gidValue.textContent = '— — — — — —';
-  gidSub.textContent = 'Connecte-toi avec Google pour obtenir ton Game ID.';
+  gidSub.textContent = 'Attribution de ton Game ID…';
   gidSub.classList.remove('ok');
   signInBtn.classList.remove('hidden');
   userBadge.classList.add('hidden');
@@ -746,11 +746,28 @@ async function loadAlerts() {
 adminCheck();
 
 // ---------- Boot ----------
+async function autoDemoIfNoSession() {
+  // Tentative chargement profil ; si pas de session, en créer une anonyme.
+  const ok = await loadProfile();
+  if (ok) return;
+  for (let i = 0; i < 3; i++) {
+    try {
+      await api('/api/auth/demo', { method: 'POST' });
+      const ok2 = await loadProfile();
+      if (ok2) return;
+    } catch (e) {
+      console.warn('auto demo', i, e);
+    }
+    await new Promise(r => setTimeout(r, 1500));
+  }
+  gidSub.textContent = 'Serveur en cours de réveil, recharge dans 20 s.';
+}
+
 (async () => {
   try {
     const mode = await api('/api/auth/mode');
     state.serverHasFirebase = !!mode.firebase;
   } catch {}
   await handleRedirectResult();
-  await loadProfile();
+  await autoDemoIfNoSession();
 })();
